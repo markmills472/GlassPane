@@ -43,7 +43,7 @@ public final class GlassPaneRun {
         ViewGlassInt view = new ViewGlass();
         ControllerGlassInt controller = new ControllerGlass(model, view);
         view.setController(controller);
-        model.addPattern("SwirlPatternModule2");
+//        model.addPattern("SwirlPatternModule2");
         
         controller.begin();
 //        
