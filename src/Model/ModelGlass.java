@@ -58,29 +58,41 @@ public final class ModelGlass implements ModelGlassInt {
     	int count = 0;
     	
     	switch (pattern) {
-//	    	case "SwirlPatternModule1" :
-//	    		for(double theta = 1 ; theta < 2.0*Math.PI ; theta += (2*Math.PI/ 13.0)){
-//	        		for(double phi = 1 ; phi < 2.0*Math.PI ; phi += (2*Math.PI/ 7.0)){
-//	    				csHold = new CoordinateSystem(count);
-//	    				csHold.setDistanceVectorFromOrg(new Vector3f(
-//	    						(float)((ViewGlass.controller.viewPortDims().getWidth() / 16.0f) +
-//			    						(ViewGlass.controller.viewPortDims().getWidth() / 24.0f) *
-//										Math.sin(theta)*Math.cos(phi)),
-//	    						
-//	    						(float)((ViewGlass.controller.viewPortDims().getHeight() / 16.0f) +
-//			    						(ViewGlass.controller.viewPortDims().getHeight() / 24.0f) *
-//										Math.sin(theta)*Math.cos(phi)),
-//	    						
-//	    						(float)(zOffset +
-//	    								placementRadius*Math.cos(theta)
-//	    								)));
-//	    				SwirlDroplet droplet = new SwirlDroplet(csHold);
-//	    	//			Sphere sphere = new Sphere(4.0f, 4, 16, csHold);
-//	    	    		this.allCoords.add(csHold);
-//	    	    		count++;
-//	        		}
-//	    		}
-//	    	break;
+	    	case "SwirlPatternModule1" :
+	    		for(double theta = 1 ; theta < 2.0*Math.PI ; theta += (2*Math.PI/ 13.0)){
+	        		for(double phi = 1 ; phi < 2.0*Math.PI ; phi += (2*Math.PI/ 7.0)){
+	    				csHold = new CoordinateSystem(count);
+	    				csHold.setDistanceVectorFromOrg(new Vector3f(
+	    						(float)((ViewGlass.controller.viewPortDims().getWidth() / 16.0f) +
+			    						(ViewGlass.controller.viewPortDims().getWidth() / 24.0f) *
+										Math.sin(theta)*Math.cos(phi)),
+	    						
+	    						(float)((ViewGlass.controller.viewPortDims().getHeight() / 16.0f) +
+			    						(ViewGlass.controller.viewPortDims().getHeight() / 24.0f) *
+										Math.sin(theta)*Math.sin(phi)),
+	    						
+	    						(float)(zOffset +
+	    								placementRadius*Math.cos(theta)
+	    								)));
+	    				SwirlDroplet droplet = new SwirlDroplet(csHold);
+	    	//			Sphere sphere = new Sphere(4.0f, 4, 16, csHold);
+	    	    		this.allCoords.add(csHold);
+	    	    		count++;
+	        		}
+	    		}
+	    	break;
+	    	case "SwirlPatternModule2" :
+	    		for(double theta = 0 ; theta < 2.0*Math.PI ; theta += (2*Math.PI/ 13.0)){
+	        		for(double phi = 0 ; phi < 2.0*Math.PI ; phi += (2*Math.PI/ 7.0)){
+	    				csHold = new CoordinateSystem(count);
+	    				csHold.setDistanceVectorFromOrg( new Vector3f( 0f, 0f, 0f ) );
+	    				SwirlDroplet droplet = new SwirlDroplet(csHold);
+	    	//			Sphere sphere = new Sphere(4.0f, 4, 16, csHold);
+	    	    		this.allCoords.add(csHold);
+	    	    		count++;
+	        		}
+	    		}
+	    	break;
     	}
     	
     	
@@ -272,6 +284,7 @@ public final class ModelGlass implements ModelGlassInt {
 
 		}	
 	}
+	
 	private Vector3f applyTransforms(Vector3f vector, List<Matrix4x4f> transforms) {
 		for(int k = transforms.size() - 1; k >= 0 ; k--){
 			Matrix4x4f holderMatrix = new Matrix4x4f();

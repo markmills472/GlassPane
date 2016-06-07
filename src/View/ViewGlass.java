@@ -211,8 +211,7 @@ public final class ViewGlass extends JFrame implements ViewGlassInt {
     		}
     		
     	});
-    	
-/***    	
+    	    	
     	//View 2
     	float[] shapeColor2 = {150, 255, 125, 255, 150, 255 };
     	Vector3f shapeColorVel2 = new Vector3f(-1f, 1f, -1f);
@@ -225,6 +224,7 @@ public final class ViewGlass extends JFrame implements ViewGlassInt {
     			bkgColorVel2
     			); 
     	
+/***  	
     	this.gp2 = new GlassPanel(2,controller, colorPkg2);
     	gbc.fill = GridBagConstraints.VERTICAL;
     	//c.ipady = GLASSPANE_HEIGHT;
@@ -262,7 +262,7 @@ public final class ViewGlass extends JFrame implements ViewGlassInt {
     	gbc.gridx = 0;
     	gbc.gridy = 1;
     	contentPane.add(gp3,gl);
-    	
+
     	//View 7
     	float[] shapeColor7 = {50, 255, 150, 255, 250, 255 };
     	Vector3f shapeColorVel7 = new Vector3f(-2f, -3f, -2f);
