@@ -42,7 +42,7 @@ public class GlassPanel extends JPanel {
 		
 		// Set Movie import configurations
 		int currentDirectoryIndexNum = 0;
-		int numBuffImgsAllowedPerArray = 100;
+		int numBuffImgsAllowedPerArray = 4;
 		int numArrays = 2;
 		
 		//Rate to import images ( counter for reading images -- 1 == every picture -- 2 == every other -- etc... )
@@ -51,7 +51,8 @@ public class GlassPanel extends JPanel {
 		//For drawing images and morphing them
 		int totalIterationCount = 0;
 		float framesPerIteration = 1f;
-		float currentFrame = 50f;
+		float startFrame = 4445f;
+		float currentFrame = 4445f;
 		
 		
 //		Graphics2D globalGraphics;
@@ -115,7 +116,7 @@ public class GlassPanel extends JPanel {
 		private void populateVideoDirectories() {
 //			this.frameDirectory[0][0] = "res/All_Movies_asOf_May30_2016/Istock_clouds_moving_with_deep_blue_sky_-_Image_Sequence/IMG_";
 //				this.frameDirectory[0][1] = ".jpg";
-			this.frameDirectory[0][0] = "res/All_Movies_asOf_May30_2016/North_Avenue_Beach_-_Chicago,_IL,_May_14,_2016/_Vid_-16-ImageSequence/IMG_";
+			this.frameDirectory[0][0] = "res/All_Movies_asOf_May30_2016/4Min20SecRapAttack - Image Sequence/IMG_";
 				this.frameDirectory[0][1] = ".jpg";
 			this.frameDirectory[1][0] = "res/All_Movies_asOf_May30_2016/Istock_clouds_moving_with_deep_blue_sky_-_Image_Sequence/IMG_" ;
 				this.frameDirectory[1][1] = ".jpg";
@@ -158,7 +159,7 @@ public class GlassPanel extends JPanel {
 				
 				try {
 					
-					String fileNumString = Integer.toString((int) this.currentFrame);
+					String fileNumString = Integer.toString((int) ( this.currentFrame % this.numBuffImgsAllowedPerArray ) );
 					while ( fileNumString.length() != 4 ) fileNumString = "0" + fileNumString;
 					rawImg = ImageIO.read(new File(firstHalfFileLocIntro + fileNumString + secondHalfTimeDelayFileType ));
 					
@@ -298,8 +299,8 @@ public class GlassPanel extends JPanel {
 			// Rotate slowly and draw image
 //			rotateImage( g2, this.getWidth() / 2, this.getHeight() / 2, buffImg1, observer); // Center rotation
 			
-			rotateImage( g2, this.totalIterationCount / 64, this.getWidth() / 2, this.getHeight() /2, buffImg2, observer);			 // Quarter 
-			rotateImage( g2, - this.totalIterationCount / 64, this.getWidth() / 2, this.getHeight() /2, buffImg2, observer);
+			rotateImage( g2, this.totalIterationCount / 2, this.getWidth() / 2, this.getHeight() /2, buffImg2, observer);			 // Quarter 
+			rotateImage( g2, - this.totalIterationCount / 2, this.getWidth() / 2, this.getHeight() /2, buffImg2, observer);
 //			rotateImage( g2, 3 * this.getWidth() / 4, 3 * this.getHeight() / 4, buffImg1, observer); // four
 //			rotateImage( g2, 3 * this.getWidth() / 4, this.getHeight() / 4, buffImg1, observer); 	 //     points
 			
