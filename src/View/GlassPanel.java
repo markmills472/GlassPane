@@ -42,7 +42,7 @@ public class GlassPanel extends JPanel {
 		
 		// Set Movie import configurations
 		int currentDirectoryIndexNum = 0;
-		int numBuffImgsAllowedPerArray = 4;
+		int numBuffImgsAllowedPerArray = 500;
 		int numArrays = 2;
 		
 		//Rate to import images ( counter for reading images -- 1 == every picture -- 2 == every other -- etc... )
@@ -50,9 +50,9 @@ public class GlassPanel extends JPanel {
 		
 		//For drawing images and morphing them
 		int totalIterationCount = 0;
-		float framesPerIteration = 1f;
-		float startFrame = 4445f;
-		float currentFrame = 4445f;
+		float framesPerIteration = 5f;
+		float startFrame = 1f;
+		float currentFrame = 1f;
 		
 		
 //		Graphics2D globalGraphics;
@@ -116,9 +116,9 @@ public class GlassPanel extends JPanel {
 		private void populateVideoDirectories() {
 //			this.frameDirectory[0][0] = "res/All_Movies_asOf_May30_2016/Istock_clouds_moving_with_deep_blue_sky_-_Image_Sequence/IMG_";
 //				this.frameDirectory[0][1] = ".jpg";
-			this.frameDirectory[0][0] = "res/All_Movies_asOf_May30_2016/4Min20SecRapAttack - Image Sequence/IMG_";
+			this.frameDirectory[0][0] = "res/All_Movies_asOf_May30_2016/VanishedVideo/IMG_0066_-_Image_Sequence/IMG_";
 				this.frameDirectory[0][1] = ".jpg";
-			this.frameDirectory[1][0] = "res/All_Movies_asOf_May30_2016/Istock_clouds_moving_with_deep_blue_sky_-_Image_Sequence/IMG_" ;
+			this.frameDirectory[1][0] = "res/All_Movies_asOf_May30_2016/SpaceMan/SpaceManClips-ImageSequence/IMG_" ;
 				this.frameDirectory[1][1] = ".jpg";
 //			this.gifDirectory[0][0] = "res/All_Movies_asOf_May30_2016/VanishedVideo/IMG_0066_-_Image_Sequence/IMG_";
 //				this.gifDirectory[0][1] = ".jpg";
@@ -299,8 +299,12 @@ public class GlassPanel extends JPanel {
 			// Rotate slowly and draw image
 //			rotateImage( g2, this.getWidth() / 2, this.getHeight() / 2, buffImg1, observer); // Center rotation
 			
-			rotateImage( g2, this.totalIterationCount / 2, this.getWidth() / 2, this.getHeight() /2, buffImg2, observer);			 // Quarter 
-			rotateImage( g2, - this.totalIterationCount / 2, this.getWidth() / 2, this.getHeight() /2, buffImg2, observer);
+				rotateImage( g2, this.totalIterationCount / 2, this.getWidth() / 4, this.getHeight() / 5, buffImg2, observer);			 // Quarter 
+				rotateImage( g2, - this.totalIterationCount / 4, this.getWidth() / -2, this.getHeight() / 4, buffImg2, observer);
+				rotateImage( g2, this.totalIterationCount / 2, this.getWidth() / 4, this.getHeight() / 3, buffImg2, observer);			 // Quarter 
+				rotateImage( g2, - this.totalIterationCount / 4, this.getWidth() / -2, this.getHeight() / 4, buffImg2, observer);
+				rotateImage( g2, this.totalIterationCount / 2, this.getWidth() / 4, this.getHeight() / 5, buffImg2, observer);			 // Quarter 
+
 //			rotateImage( g2, 3 * this.getWidth() / 4, 3 * this.getHeight() / 4, buffImg1, observer); // four
 //			rotateImage( g2, 3 * this.getWidth() / 4, this.getHeight() / 4, buffImg1, observer); 	 //     points
 			
