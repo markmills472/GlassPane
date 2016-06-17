@@ -35,8 +35,8 @@ public final class ViewGlass extends JFrame implements ViewGlassInt {
 
     public static ControllerGlassInt controller;
     private final Timer timer = new Timer(20, this);
-    public static final int GLASSPANE_HEIGHT = 800;
-    public static final int GLASSPANE_WIDTH = 800;
+    public static final int GLASSPANE_HEIGHT = 700;
+    public static final int GLASSPANE_WIDTH = 1200;
     final static boolean RIGHT_TO_LEFT = true;
 
     private int flashRedrawCount = 0;
@@ -85,9 +85,9 @@ public final class ViewGlass extends JFrame implements ViewGlassInt {
 //    	contentPane.setLayout(gbc);
     	
     	// View 1
-    	float[] shapeColor1 = {128, 255, 127, 255, 128, 255 };
-    	Vector3f shapeColorVel1 = new Vector3f(1f, -2f, 3f);
-    	Color bkgColor1 = new Color(0.1f, 0.8f, 0.1f);
+    	float[] shapeColor1 = { 51, 255, 0, 255, 204, 255 };
+    	Vector3f shapeColorVel1 = new Vector3f( 0.8f, 0f, 0.2f);
+    	Color bkgColor1 = new Color(0.8f, 0.0f, 0.2f);
     	Color bkgColor2 = new Color(0.2f, 0.1f, 0.7f);
     	Color bkgColor3 = new Color(0.3f, 0.6f, 0.1f);
     	Color bkgColor4 = new Color(0.4f, 0.1f, 0.5f);
@@ -174,7 +174,7 @@ public final class ViewGlass extends JFrame implements ViewGlassInt {
     	contentPane.add(gp6,gl);
     	
  ***/   	
-    	Vector3f bkgColorVel1 = new Vector3f(-1.17f, 1.34f, -1.51f);
+    	Vector3f bkgColorVel1 = new Vector3f(-0.2f, 0f, -0.8f);
     	
     	GlassPanel.GlassPanelColorPackage colorPkg1 = GlassPanel.getGlassPanelColorPackageInstance(
     			shapeColor1,

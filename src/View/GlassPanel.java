@@ -12,7 +12,6 @@ import java.awt.Shape;
 import java.awt.event.KeyEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
-import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
 import java.awt.image.ImageObserver;
@@ -33,7 +32,7 @@ public class GlassPanel extends JPanel {
 		
 		Map<Vector3f,Shape> allShapesToDraw;
 		int panelID;//****** MUST BE UNIQUE FOR EVERY PANEL ****
-		ControllerGlassInt controller;
+		static ControllerGlassInt controller;
 		int framesToKeepPaint = 1;
 		boolean showFarthestFirst = false;
 		GlassPanelColorPackage colorPkg = null;
@@ -42,15 +41,16 @@ public class GlassPanel extends JPanel {
 		
 		// Set Movie import configurations
 		int currentDirectoryIndexNum = 0;
-		int numBuffImgsAllowedPerArray = 500;
-		int numArrays = 2;
+		int numBuffImgsAllowedPerArray = 60;
+		int numArrays = 3;
 		
 		//Rate to import images ( counter for reading images -- 1 == every picture -- 2 == every other -- etc... )
 		int frameReadCounterIncrement = 1;
 		
 		//For drawing images and morphing them
 		int totalIterationCount = 0;
-		float framesPerIteration = 5f;
+		float framesPerIterationClip1 = 1f;
+		float framesPerIterationClip2 = 50f;
 		float startFrame = 1f;
 		float currentFrame = 1f;
 		
@@ -76,7 +76,7 @@ public class GlassPanel extends JPanel {
 				@Override
 				public void keyPressed(KeyEvent e) {
 					if(e.getID() == KeyEvent.VK_P){
-						controller.toggleToParrellelView(panelID);
+						GlassPanel.controller.toggleToParrellelView(panelID);
 					}
 				}
 			};
@@ -104,7 +104,7 @@ public class GlassPanel extends JPanel {
 				@Override
 				public void keyPressed(KeyEvent e) {
 					if(e.getID() == KeyEvent.VK_P){
-						controller.toggleToParrellelView(panelID);
+						GlassPanel.controller.toggleToParrellelView(panelID);
 					}
 				}
 			};
@@ -114,16 +114,16 @@ public class GlassPanel extends JPanel {
 		}
 		
 		private void populateVideoDirectories() {
-//			this.frameDirectory[0][0] = "res/All_Movies_asOf_May30_2016/Istock_clouds_moving_with_deep_blue_sky_-_Image_Sequence/IMG_";
+//			this.frameDirectory[0][0] = "res/1MinBallInSand-ImageSequence/IMG_";
 //				this.frameDirectory[0][1] = ".jpg";
-			this.frameDirectory[0][0] = "res/All_Movies_asOf_May30_2016/VanishedVideo/IMG_0066_-_Image_Sequence/IMG_";
+//			this.frameDirectory[1][0] = "res/30SecSmallBurst-ImageSequence/IMG_";
+//				this.frameDirectory[1][1] = ".jpg";
+			this.frameDirectory[0][0] = "res/30SecSpiralIn-ImageSequence/IMG_" ;
 				this.frameDirectory[0][1] = ".jpg";
-			this.frameDirectory[1][0] = "res/All_Movies_asOf_May30_2016/SpaceMan/SpaceManClips-ImageSequence/IMG_" ;
+			this.frameDirectory[1][0] = "res/30Sec4PointStar-ImageSequence/IMG_";
 				this.frameDirectory[1][1] = ".jpg";
-//			this.gifDirectory[0][0] = "res/All_Movies_asOf_May30_2016/VanishedVideo/IMG_0066_-_Image_Sequence/IMG_";
-//				this.gifDirectory[0][1] = ".jpg";
-//			this.gifDirectory[1][0] = "res/All_Movies_asOf_May30_2016/VanishedVideo/IMG_0067_-_Image_Sequence/IMG_";
-//				this.gifDirectory[1][1] = ".jpg";
+			this.frameDirectory[2][0] = "res/30SecGeometry-ImageSequence/IMG_";
+				this.frameDirectory[2][1] = ".jpg";
 //			this.gifDirectory[0][0] = "res/All_Movies_asOf_May30_2016/VanishedVideo/IMG_0068_-_Image_Sequence/IMG_";
 //				this.gifDirectory[0][1] = ".jpg";
 //			this.gifDirectory[6][0] = "res/GifCollections/natureGifs/natureScene7/frame_";
@@ -153,7 +153,7 @@ public class GlassPanel extends JPanel {
 
 		private void fillBuffImg2DArray(int gifDirectoryLocation, String firstHalfFileLocIntro, String secondHalfTimeDelayFileType) {
 
-			for ( int i = 1  ; i < this.numBuffImgsAllowedPerArray ; i++) {
+			for ( int i = 0  ; i < this.numBuffImgsAllowedPerArray ; i++) {
 					
 				Image rawImg;
 				
@@ -183,17 +183,17 @@ public class GlassPanel extends JPanel {
 					
 					if( e.getMessage().equalsIgnoreCase( "Can't read input file!" ) ) {
 						System.out.println( "Img Loc : " + i + " -- Might not be an error" );
-						i = Integer.MAX_VALUE;
 					} else {
 						e.printStackTrace();
 					}
-					
-					return;
+
 				}
 				
 				this.currentFrame += this.frameReadCounterIncrement;
 				
 			}
+			
+			return;
 			
 		}
 
@@ -213,14 +213,21 @@ public class GlassPanel extends JPanel {
 			AffineTransform originalTransform = g2.getTransform();
 			
 			int imgNum1 = (int) (totalIterationCount % this.numBuffImgsAllowedPerArray);
-			int imgNum2 = (int) (totalIterationCount % this.numBuffImgsAllowedPerArray);
-				
+			int imgNum2 = (int) (totalIterationCount * 2 % this.numBuffImgsAllowedPerArray);
+			int imgNum3 = (int) (totalIterationCount * 4 % this.numBuffImgsAllowedPerArray);
+			
 			// Change scenes when all slots have been hit
-			if( imgNum1 >= (this.numBuffImgsAllowedPerArray - 1) )
-				currentDirectoryIndexNum++;
-			if( imgNum1 >= (this.numBuffImgsAllowedPerArray - 1) &&
-					this.currentDirectoryIndexNum == this.numArrays )
-				currentDirectoryIndexNum = 0;
+			if( imgNum1 >= (this.numBuffImgsAllowedPerArray - 1) ) {
+			//	currentDirectoryIndexNum++;
+				totalIterationCount++;
+				return;
+			}
+			if( imgNum2 >= (this.numBuffImgsAllowedPerArray - 1) &&
+					this.currentDirectoryIndexNum == this.numArrays ) {
+			//	currentDirectoryIndexNum = 0;
+				totalIterationCount += 50;
+				return;
+			}
 			
 			BufferedImage buffImg1 = this.buffImgArray[currentDirectoryIndexNum][imgNum1];
 			if( buffImg1 == null) {
@@ -232,6 +239,12 @@ public class GlassPanel extends JPanel {
 			if( buffImg2 == null) {
 				imgNum2 = 0;
 				buffImg2 = this.buffImgArray[ (currentDirectoryIndexNum + 1) % this.numArrays ][imgNum2];
+			}
+			
+			BufferedImage buffImg3 = this.buffImgArray[ (currentDirectoryIndexNum + 1) % this.numArrays ][imgNum2];
+			if( buffImg3 == null) {
+				imgNum3 = 0;
+				buffImg3 = this.buffImgArray[ (currentDirectoryIndexNum + 2) % this.numArrays ][imgNum3];
 			}
 			
 			ImageObserver observer = new ImageObserver() {
@@ -299,11 +312,11 @@ public class GlassPanel extends JPanel {
 			// Rotate slowly and draw image
 //			rotateImage( g2, this.getWidth() / 2, this.getHeight() / 2, buffImg1, observer); // Center rotation
 			
-				rotateImage( g2, this.totalIterationCount / 2, this.getWidth() / 4, this.getHeight() / 5, buffImg2, observer);			 // Quarter 
-				rotateImage( g2, - this.totalIterationCount / 4, this.getWidth() / -2, this.getHeight() / 4, buffImg2, observer);
-				rotateImage( g2, this.totalIterationCount / 2, this.getWidth() / 4, this.getHeight() / 3, buffImg2, observer);			 // Quarter 
-				rotateImage( g2, - this.totalIterationCount / 4, this.getWidth() / -2, this.getHeight() / 4, buffImg2, observer);
-				rotateImage( g2, this.totalIterationCount / 2, this.getWidth() / 4, this.getHeight() / 5, buffImg2, observer);			 // Quarter 
+//				rotateImage( g2, this.totalIterationCount / 4, this.getWidth() / 8, this.getHeight() / 4, buffImg2, observer);			 // Quarter 
+//				rotateImage( g2, - this.totalIterationCount / 4, this.getWidth() / -8, this.getHeight() / 5, buffImg2, observer);
+//				rotateImage( g2, this.totalIterationCount / 4, this.getWidth() / 8, this.getHeight() / 7, buffImg2, observer);			 // Quarter 
+//				rotateImage( g2, - this.totalIterationCount / 4, this.getWidth() / -8, this.getHeight() / 8, buffImg2, observer);
+//				rotateImage( g2, this.totalIterationCount / 4, this.getWidth() / 8, this.getHeight() / 9, buffImg2, observer);			 // Quarter 
 
 //			rotateImage( g2, 3 * this.getWidth() / 4, 3 * this.getHeight() / 4, buffImg1, observer); // four
 //			rotateImage( g2, 3 * this.getWidth() / 4, this.getHeight() / 4, buffImg1, observer); 	 //     points
@@ -326,13 +339,22 @@ public class GlassPanel extends JPanel {
 			// Add Circular Layers
 			
 			// Transform Image by Pixels
-//			addPixelatedImage( this.currentDirectoryIndexNum, imgNum1, g2, observer, 100 );
+			
+			float numSphereSections = 1f;
+			for ( float theta = 0f ; theta < 2.0f * (float) Math.PI ; theta += 1f / numSphereSections ) {
+				for ( float phi = 0f ; phi < 2.0f * (float) Math.PI ; phi += 1f / numSphereSections ) {
+					addPixelatedImage( ( this.currentDirectoryIndexNum + 1 ) % this.numArrays,
+							imgNum2, g2, observer, 100,
+							(float) ( 8.0f * Math.sin(theta) * Math.cos(phi) ), (float) ( 8.0f * Math.sin(theta) * Math.sin(phi) ),
+							this.totalIterationCount / 64.0f, this.totalIterationCount / 64.0f);
+				}
+			}
 			
 			// Convex Rect Layers
-//			addConvexLayers( imgNum1, g2, observer );
+			addConvexLayers( ( this.currentDirectoryIndexNum + 2 ) % ( this.numArrays ), imgNum3, g2, observer );
 
 			// Concave Rect Layers
-//			addConcaveLayers( imgNum1, g2, observer );
+//			addConcaveLayers( ( this.currentDirectoryIndexNum ) % ( this.numArrays ), imgNum2, g2, observer );
 			
 //			float multiplier = 0.5f;
 //			
@@ -390,8 +412,8 @@ public class GlassPanel extends JPanel {
 		    g2.setComposite(ac);
 			
 			
-		    this.totalIterationCount++;
-			this.currentFrame = this.framesPerIteration * this.totalIterationCount;	
+		    this.totalIterationCount += (float) Math.cos( Math.sqrt( Math.pow( System.currentTimeMillis() % 512f, 2 ) ) );
+			this.currentFrame = this.framesPerIterationClip1 * this.totalIterationCount;	
 			
 			if(controller == null)
 				controller = ViewGlass.controller;
@@ -528,9 +550,8 @@ public class GlassPanel extends JPanel {
 			
 		}
 
-		private void addConvexLayers( int imgNum , Graphics2D g2, ImageObserver observer ) {
+		private void addConvexLayers( int graphicsSceneNum, int imgNum , Graphics2D g2, ImageObserver observer ) {
 			
-			int graphicsSceneNum = ( this.currentDirectoryIndexNum + 1 ) % ( this.numArrays );
 			BufferedImage graphicsBuffImg = this.buffImgArray[graphicsSceneNum][imgNum];
 			while( graphicsBuffImg == null) {
 				imgNum = imgNum % this.buffImgArray[0].length;
@@ -546,7 +567,7 @@ public class GlassPanel extends JPanel {
 				float xWidth = this.currentFrame % 3.5f ;
 				float yHeight = this.currentFrame % 3.5f ;
 				
-				drawRectPatternWithBufferedImageFromSceneNum(
+				drawCircularPatternWithBufferedImageFromSceneNum(
 						graphicsSceneNum,
 						g2,
 						graphicsBuffImg,
@@ -554,22 +575,20 @@ public class GlassPanel extends JPanel {
 						numCircleSections,
 						numPoints,
 						radiusMultiplier,
-						this.getWidth() / 8.0f,
-						this.getHeight() / 8.0f);
+						this.getWidth() / 0.75f,
+						this.getHeight() / 0.75f);
 				
 			}
 			
 			
 		}
 
-		private void addConcaveLayers(int imgNum, Graphics2D g2, ImageObserver observer) {
+		private void addConcaveLayers(int currentDirectoryIndexNum, int imgNum2, Graphics2D g2, ImageObserver observer) {
 			
-			int graphicsSceneNum = ( this.currentDirectoryIndexNum + 2 ) % ( this.numArrays );
-			BufferedImage graphicsBuffImg = this.buffImgArray[graphicsSceneNum][imgNum];
+			BufferedImage graphicsBuffImg = this.buffImgArray[currentDirectoryIndexNum][imgNum2];
 			while( graphicsBuffImg == null) {
-				imgNum = imgNum % this.buffImgArray[0].length;
-				graphicsSceneNum = ( graphicsSceneNum + 2 ) % ( this.numArrays );
-				graphicsBuffImg = this.buffImgArray[graphicsSceneNum][imgNum];
+				imgNum2 = imgNum2 % this.buffImgArray[0].length;
+				graphicsBuffImg = this.buffImgArray[ ( currentDirectoryIndexNum + 1 ) % this.numArrays ][imgNum2 % this.numBuffImgsAllowedPerArray];
 			}
 			
 			for ( float phi = 0 ; phi <= 2.0 * Math.PI ; phi += 2.0 * Math.PI/ 12.0f ) {
@@ -591,13 +610,15 @@ public class GlassPanel extends JPanel {
 //						this.getHeight() / 16.0f);
 				
 				drawCircularPatternWithBufferedImageFromSceneNum(
-						graphicsSceneNum,
+						currentDirectoryIndexNum,
 						g2,
 						graphicsBuffImg,
 						observer,
 						numCircleSections,
 						numPoints,
-						radiusMultiplier);
+						radiusMultiplier,
+						this.getWidth() / 8.0f,
+						this.getHeight() / 8.0f);
 				
 			}
 			
@@ -652,7 +673,9 @@ public class GlassPanel extends JPanel {
 		}
 		
 		private void addPixelatedImage(int currentDirectoryIndexNum2, int imgNum, Graphics2D g2,
-				ImageObserver observer, int samplingInterval ) {
+				ImageObserver observer, int samplingInterval,
+				float xDiv, float yDiv,
+				float theta, float phi) {
 			
 			int graphicsSceneNum = ( this.currentDirectoryIndexNum + 1 ) % ( this.numArrays );
 			BufferedImage graphicsBuffImg = this.buffImgArray[graphicsSceneNum][imgNum];
@@ -674,7 +697,10 @@ public class GlassPanel extends JPanel {
 				    int alpha = (pixel >> 24) & 0xff;
 				    
 				    g2.setColor( new Color( red, green, blue, alpha ) );
-				    g2.draw( new Ellipse2D.Float( x, y, samplingInterval, samplingInterval ) );
+				    g2.fill( new Ellipse2D.Float(
+				    		(float) ( this.getWidth() / 2.0f + (x / xDiv) * Math.sin(theta) * Math.cos(phi) ),
+				    		(float) ( this.getHeight() / 2.0f + (y / yDiv) * Math.sin(theta) * Math.sin(phi)),
+				    		samplingInterval, samplingInterval ) );
 						
 				}
 				
@@ -788,7 +814,8 @@ public class GlassPanel extends JPanel {
 				ImageObserver observer,
 				int numCircleSections,
 				int numPoints,
-				float radiusMultiplier) {
+				float radiusMultiplier,
+				float f, float g) {
 			
 			for ( float phi = 0 ; phi < 2.0 * Math.PI ; phi += 2.0*Math.PI/numCircleSections) {
 				int[] x1 = new int[numPoints];
@@ -964,7 +991,7 @@ public class GlassPanel extends JPanel {
 		public static class GlassPanelColorPackage{
 			
 			//Shape Colors
-			public float[] shapeColorVBO = {100, 255, 100 , 255 , 100, 255}; //color Virtual Buffer Object
+			public float[] shapeColorVBO = {254, 255, 254 , 255 , 254, 255}; //color Virtual Buffer Object
 			public Color backgroundColor = new Color(0f,0f,0f); // BLACK
 			public Vector3f shapeColorVelocity = new Vector3f();
 			public Vector3f backgroundColorVelocity = new Vector3f();	
