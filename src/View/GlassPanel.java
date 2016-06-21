@@ -31,7 +31,7 @@ import Helpers.Vector3f;
 public class GlassPanel extends JPanel {
 		
 		Map<Vector3f,Shape> allShapesToDraw;
-		int panelID;//****** MUST BE UNIQUE FOR EVERY PANEL ****
+		int panelID; // ****** MUST BE UNIQUE FOR EVERY PANEL **** //
 		static ControllerGlassInt controller;
 		int framesToKeepPaint = 1;
 		boolean showFarthestFirst = false;
@@ -40,19 +40,15 @@ public class GlassPanel extends JPanel {
 		BufferedImage[][] buffImgArray = null;
 		
 		// Set Movie import configurations
-		int currentDirectoryIndexNum = 0;
-		int numBuffImgsAllowedPerArray = 60;
-		int numArrays = 3;
+		int numBuffImgsStoredInEachArrayOfImages = 100; // 2479;
+		int numScenesInCurrentLoad = 3;
 		
-		//Rate to import images ( counter for reading images -- 1 == every picture -- 2 == every other -- etc... )
-		int frameReadCounterIncrement = 1;
+		int frameReadCounterIncrement = 5;
 		
 		//For drawing images and morphing them
 		int totalIterationCount = 0;
-		float framesPerIterationClip1 = 1f;
-		float framesPerIterationClip2 = 50f;
-		float startFrame = 1f;
-		float currentFrame = 1f;
+		float [] framesPerIterationClipN = { 20f, 20f, 20f }; // Rate to import images ( counter for reading images -- 1 == every picture -- 2 == every other -- etc... )
+		float [] currentFrameForClipN = { 1f, 1f, 1f }; // Changes image file read during any given frame
 		
 		
 //		Graphics2D globalGraphics;
@@ -61,8 +57,8 @@ public class GlassPanel extends JPanel {
 			
 			this.panelID = panelNum;
 			this.controller = controller;
-			this.frameDirectory = new String[this.numArrays][2];
-			this.buffImgArray = new BufferedImage[this.numArrays][this.numBuffImgsAllowedPerArray];
+			this.frameDirectory = new String[this.numScenesInCurrentLoad][2];
+			this.buffImgArray = new BufferedImage[this.numScenesInCurrentLoad][this.numBuffImgsStoredInEachArrayOfImages];
 			// Set empty frames in all slots as storage
 			for ( int i = 0 ; i < this.buffImgArray.length ; i++ ) {
 				for ( int k = 0 ; k < this.buffImgArray[0].length ; k++ ) {
@@ -88,8 +84,8 @@ public class GlassPanel extends JPanel {
 			
 			this.panelID = panelNum;
 			this.controller = controller;
-			this.frameDirectory = new String[this.numArrays][2];
-			this.buffImgArray = new BufferedImage[this.numArrays][this.numBuffImgsAllowedPerArray];
+			this.frameDirectory = new String[this.numScenesInCurrentLoad][2];
+			this.buffImgArray = new BufferedImage[this.numScenesInCurrentLoad][this.numBuffImgsStoredInEachArrayOfImages];
 			// Set empty frames in all slots as storage
 			for ( int i = 0 ; i < this.buffImgArray.length ; i++ ) {
 				for ( int k = 0 ; k < this.buffImgArray[0].length ; k++ ) {
@@ -118,11 +114,11 @@ public class GlassPanel extends JPanel {
 //				this.frameDirectory[0][1] = ".jpg";
 //			this.frameDirectory[1][0] = "res/30SecSmallBurst-ImageSequence/IMG_";
 //				this.frameDirectory[1][1] = ".jpg";
-			this.frameDirectory[0][0] = "res/30SecSpiralIn-ImageSequence/IMG_" ;
+			this.frameDirectory[0][0] = "res/teamAwesome/Team_Awesome_Huddle-ImageSequence/IMG_0";
 				this.frameDirectory[0][1] = ".jpg";
-			this.frameDirectory[1][0] = "res/30Sec4PointStar-ImageSequence/IMG_";
+			this.frameDirectory[1][0] = "res/homeVideo1-ImageSequence/IMG_0";
 				this.frameDirectory[1][1] = ".jpg";
-			this.frameDirectory[2][0] = "res/30SecGeometry-ImageSequence/IMG_";
+			this.frameDirectory[2][0] = "res/homeVideo2-ImageSequence/IMG_0";
 				this.frameDirectory[2][1] = ".jpg";
 //			this.gifDirectory[0][0] = "res/All_Movies_asOf_May30_2016/VanishedVideo/IMG_0068_-_Image_Sequence/IMG_";
 //				this.gifDirectory[0][1] = ".jpg";
@@ -143,7 +139,7 @@ public class GlassPanel extends JPanel {
 			
 			if( this.buffImgArray.length != 0 || this.buffImgArray[0].length != 0 ) {
 				
-				for ( int j = 0 ; j < this.numArrays ; j++ ) {
+				for ( int j = 0 ; j < this.numScenesInCurrentLoad ; j++ ) {
 					fillBuffImg2DArray( j, this.frameDirectory[j][0], this.frameDirectory[j][1]);
 				}	
 				
@@ -151,47 +147,55 @@ public class GlassPanel extends JPanel {
 			
 		}
 
-		private void fillBuffImg2DArray(int gifDirectoryLocation, String firstHalfFileLocIntro, String secondHalfTimeDelayFileType) {
+		private void fillBuffImg2DArray( int directoryIndex, String firstHalfFileLocIntro, String secondHalfTimeDelayFileType ) {
 
-			for ( int i = 0  ; i < this.numBuffImgsAllowedPerArray ; i++) {
-					
-				Image rawImg;
+			synchronized (this) {
 				
-				try {
+				// :: *** NOTE *** ::: MUST ALWAYS BE TRUE ::: framesPerIterationClipN.length == this.currentFrameForClipN.length ::
+				for ( int n = 0 ; n < this.currentFrameForClipN.length ; n++ ) {
 					
-					String fileNumString = Integer.toString((int) ( this.currentFrame % this.numBuffImgsAllowedPerArray ) );
-					while ( fileNumString.length() != 4 ) fileNumString = "0" + fileNumString;
-					rawImg = ImageIO.read(new File(firstHalfFileLocIntro + fileNumString + secondHalfTimeDelayFileType ));
+					float currentFrameForClip = this.currentFrameForClipN[n];
+					float framesPerIterationClip = this.framesPerIterationClipN[n];
 					
-					// Create a buffered image with transparency
-					this.buffImgArray[gifDirectoryLocation][i] =
-							new BufferedImage(rawImg.getWidth(null),
-									rawImg.getHeight(null),
-									BufferedImage.TYPE_INT_ARGB);
-	
-				    // Draw the image on to the buffered image
-				    Graphics2D bGr = this.buffImgArray[gifDirectoryLocation][i].createGraphics();
-				    bGr.drawImage(rawImg, 0, 0, null);
-				    bGr.dispose(); 
-					
-				} catch (IOException e) {
-					
-					System.out.println(e.getMessage());
-					
-					// Fill all missed slots with nulls to save space
-					this.buffImgArray[gifDirectoryLocation][i] = null;
-					
-					if( e.getMessage().equalsIgnoreCase( "Can't read input file!" ) ) {
-						System.out.println( "Img Loc : " + i + " -- Might not be an error" );
-					} else {
-						e.printStackTrace();
+					for ( int i = 1  ; i < this.numBuffImgsStoredInEachArrayOfImages ; i++ ) {
+							
+						Image rawImg;
+						
+						
+							try {
+								
+								String fileNumString = Integer.toString((int) ( currentFrameForClip % this.numBuffImgsStoredInEachArrayOfImages ) );
+								
+								while ( fileNumString.length() != 4 ) fileNumString = "0" + fileNumString;
+									rawImg = ImageIO.read(new File(firstHalfFileLocIntro + fileNumString + secondHalfTimeDelayFileType ));
+								
+								// Create a buffered image with transparency
+								this.buffImgArray[directoryIndex][i-1] =
+										new BufferedImage(rawImg.getWidth(null),
+												rawImg.getHeight(null),
+												BufferedImage.TYPE_INT_ARGB);
+				
+								
+							} catch (IOException e) {
+								
+								System.out.println(e.getMessage());
+								
+								// Fill all missed slots with nulls to save space
+								this.buffImgArray[directoryIndex][i] = null;
+								
+								if( e.getMessage().equalsIgnoreCase( "Can't read input file!" ) ) {
+									System.out.println( "Img Loc : " + i + " -- Might not be an error" );
+								} else {
+									e.printStackTrace();
+								}
+			
+							}
+						}
+						
+						this.currentFrameForClipN[n] += framesPerIterationClip;
+						
 					}
-
 				}
-				
-				this.currentFrame += this.frameReadCounterIncrement;
-				
-			}
 			
 			return;
 			
@@ -204,339 +208,171 @@ public class GlassPanel extends JPanel {
 		@Override
 		protected void paintComponent(Graphics g) {
 			
-			Graphics2D g2 = (Graphics2D)g;
-			
-			updateColorVBO();
-			updateBackgroundColor();
-			
-			boolean flashRedraw = ViewGlass.flashRedraw;
-			AffineTransform originalTransform = g2.getTransform();
-			
-			int imgNum1 = (int) (totalIterationCount % this.numBuffImgsAllowedPerArray);
-			int imgNum2 = (int) (totalIterationCount * 2 % this.numBuffImgsAllowedPerArray);
-			int imgNum3 = (int) (totalIterationCount * 4 % this.numBuffImgsAllowedPerArray);
-			
-			// Change scenes when all slots have been hit
-			if( imgNum1 >= (this.numBuffImgsAllowedPerArray - 1) ) {
-			//	currentDirectoryIndexNum++;
-				totalIterationCount++;
-				return;
-			}
-			if( imgNum2 >= (this.numBuffImgsAllowedPerArray - 1) &&
-					this.currentDirectoryIndexNum == this.numArrays ) {
-			//	currentDirectoryIndexNum = 0;
-				totalIterationCount += 50;
-				return;
-			}
-			
-			BufferedImage buffImg1 = this.buffImgArray[currentDirectoryIndexNum][imgNum1];
-			if( buffImg1 == null) {
-				imgNum1 = 0;
-				buffImg1 = this.buffImgArray[currentDirectoryIndexNum][imgNum1];
-			}
-			
-			BufferedImage buffImg2 = this.buffImgArray[ (currentDirectoryIndexNum + 1) % this.numArrays ][imgNum2];
-			if( buffImg2 == null) {
-				imgNum2 = 0;
-				buffImg2 = this.buffImgArray[ (currentDirectoryIndexNum + 1) % this.numArrays ][imgNum2];
-			}
-			
-			BufferedImage buffImg3 = this.buffImgArray[ (currentDirectoryIndexNum + 1) % this.numArrays ][imgNum2];
-			if( buffImg3 == null) {
-				imgNum3 = 0;
-				buffImg3 = this.buffImgArray[ (currentDirectoryIndexNum + 2) % this.numArrays ][imgNum3];
-			}
-			
-			ImageObserver observer = new ImageObserver() {
-				@Override
-				public boolean imageUpdate(Image img, int infoflags, int x, int y, int width, int height) {
-					// TODO Auto-generated method stub
-					return false;
+			synchronized (this) {
+				Graphics2D g2 = (Graphics2D)g;
+				
+				updateColorVBO();
+				updateBackgroundColor();
+				
+				boolean flashRedraw = ViewGlass.flashRedraw;
+				AffineTransform originalTransform = g2.getTransform();
+				
+				BufferedImage[] buffImgs = new BufferedImage[this.numScenesInCurrentLoad];
+				for ( int i = 0 ; i < buffImgs.length ; i++ ) {
+					buffImgs[i] = getCurrentImgAfterIteration(i);
 				}
-			};
-			
-//			g2.drawImage(img,
-////				(int) (center.x() - allShapesToDraw.get(center).getBounds2D().getX()/2 ),
-////				(int) (center.y() - allShapesToDraw.get(center).getBounds2D().getY()/2 + 150 ),
-////				(int) (center.x() + allShapesToDraw.get(center).getBounds2D().getX()/2 ),
-////				(int) (center.y() + allShapesToDraw.get(center).getBounds2D().getY()/2 + 150),
-//				(int) (-1000 + count),
-//				(int) (-100 + count),
-//				(int) (img.getWidth(observer) - count),
-//				(int) (img.getHeight(observer) - count),
-//				0, //sx1
-//				0, //sy1
-//				img.getWidth(observer), //sx2
-//				img.getHeight(observer), //sy2
-//				g2.getColor(),
-//				observer);
-//			
-//			g2.drawImage(img,
-////					(int) (center.x() - allShapesToDraw.get(center).getBounds2D().getX()/2 ),
-////					(int) (center.y() - allShapesToDraw.get(center).getBounds2D().getY()/2 + 150 ),
-////					(int) (center.x() + allShapesToDraw.get(center).getBounds2D().getX()/2 ),
-////					(int) (center.y() + allShapesToDraw.get(center).getBounds2D().getY()/2 + 150),
-//					(int) (-100 + count),
-//					(int) (-100 + .5*count),
-//					(int) (img.getWidth(observer) - 2*count),
-//					(int) (img.getHeight(observer) - 4*count),
-//					0, //sx1
-//					0, //sy1
-//					img.getWidth(observer), //sx2
-//					img.getHeight(observer), //sy2
-//					g2.getColor(),
-//					observer);
-			
-			// Draw Background Gif
-			
-			// Scale-Up Better Res
-//			g2.scale(2.0, 2.0);
-			
-			// Center and draw image
-			// FIXME :: drawn to upper left corner - not centered
-//			if (this.totalIterationCount == 0){
-				g2.drawImage(buffImg1,
-						0,
-						0,
-						this.getWidth(),
-						this.getHeight(),
-						observer);
-//			}
-//				g2.drawImage(buffImg2,
-//						0,
-//						0,
-//						this.getWidth(),
-//						this.getHeight(),
-//						observer);
-			
-			// Rotate slowly and draw image
-//			rotateImage( g2, this.getWidth() / 2, this.getHeight() / 2, buffImg1, observer); // Center rotation
-			
-//				rotateImage( g2, this.totalIterationCount / 4, this.getWidth() / 8, this.getHeight() / 4, buffImg2, observer);			 // Quarter 
-//				rotateImage( g2, - this.totalIterationCount / 4, this.getWidth() / -8, this.getHeight() / 5, buffImg2, observer);
-//				rotateImage( g2, this.totalIterationCount / 4, this.getWidth() / 8, this.getHeight() / 7, buffImg2, observer);			 // Quarter 
-//				rotateImage( g2, - this.totalIterationCount / 4, this.getWidth() / -8, this.getHeight() / 8, buffImg2, observer);
-//				rotateImage( g2, this.totalIterationCount / 4, this.getWidth() / 8, this.getHeight() / 9, buffImg2, observer);			 // Quarter 
-
-//			rotateImage( g2, 3 * this.getWidth() / 4, 3 * this.getHeight() / 4, buffImg1, observer); // four
-//			rotateImage( g2, 3 * this.getWidth() / 4, this.getHeight() / 4, buffImg1, observer); 	 //     points
-			
-			
-//			g2.drawImage(buffImg1,
-//					(int)
-//					((this.getWidth() / 2 -
-//					 this.getWidth() / 4) *
-//					Math.sin(this.totalIterationCount / 32)),
-//					
-//					(int)
-//					((this.getHeight() / 2 -
-//					 this.getHeight() / 4) *
-//					Math.cos(this.totalIterationCount / 32)),
-//					
-//					observer
-//					);
-			
-			// Add Circular Layers
-			
-			// Transform Image by Pixels
-			
-			float numSphereSections = 1f;
-			for ( float theta = 0f ; theta < 2.0f * (float) Math.PI ; theta += 1f / numSphereSections ) {
-				for ( float phi = 0f ; phi < 2.0f * (float) Math.PI ; phi += 1f / numSphereSections ) {
-					addPixelatedImage( ( this.currentDirectoryIndexNum + 1 ) % this.numArrays,
-							imgNum2, g2, observer, 100,
-							(float) ( 8.0f * Math.sin(theta) * Math.cos(phi) ), (float) ( 8.0f * Math.sin(theta) * Math.sin(phi) ),
-							this.totalIterationCount / 64.0f, this.totalIterationCount / 64.0f);
-				}
-			}
-			
-			// Convex Rect Layers
-			addConvexLayers( ( this.currentDirectoryIndexNum + 2 ) % ( this.numArrays ), imgNum3, g2, observer );
-
-			// Concave Rect Layers
-//			addConcaveLayers( ( this.currentDirectoryIndexNum ) % ( this.numArrays ), imgNum2, g2, observer );
-			
-//			float multiplier = 0.5f;
-//			
-//			addTransformOfImageByImageSection( ( this.currentDirectoryIndexNum + 1 ) % this.numArrays,
-//					imgNum1,
-//					g2,
-//					observer,
-//					5,
-//					240,
-//					240,
-//					(float) ( 3.0f * multiplier ),
-//					(float) ( multiplier )
-//					);
-//			
-//			addTransformOfImageByImageSection( this.currentDirectoryIndexNum,
-//					imgNum1,
-//					g2,
-//					observer,
-//					5,
-//					120,
-//					120,
-//					(float) ( -3.0f * multiplier ),
-//					(float) ( -multiplier )
-//					);
-//			
-//			addTransformOfImageByImageSection( this.currentDirectoryIndexNum,
-//					imgNum,
-//					g2,
-//					observer,
-//					5,
-//					1200,
-//					300,
-//					(float) (multiplier * - Math.sin(this.totalIterationCount))
-//					);
-//			
-//			addTransformOfImageByImageSection( this.currentDirectoryIndexNum,
-//					imgNum,
-//					g2,
-//					observer,
-//					5,
-//					1200,
-//					300,
-//					(float) (multiplier * - Math.cos(this.totalIterationCount))
-//					);
-			
-//			g2.setTransform(AffineTransform.
-//	                getTranslateInstance(0, 0));
-			g2.setTransform(AffineTransform.getRotateInstance(
-					2.0f * Math.PI / 16.0f ,
-					this.getWidth() / 2 ,
-					this.getHeight() / 2
-	                ));
-			AlphaComposite ac = java.awt.AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f );
-//			ac = java.awt.AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f );
-		    g2.setComposite(ac);
-			
-			
-		    this.totalIterationCount += (float) Math.cos( Math.sqrt( Math.pow( System.currentTimeMillis() % 512f, 2 ) ) );
-			this.currentFrame = this.framesPerIterationClip1 * this.totalIterationCount;	
-			
-			if(controller == null)
-				controller = ViewGlass.controller;
-			else if(flashRedraw){
-				allShapesToDraw = controller.getVectorsToProjMapToDraw(panelID);		
-				Iterator<Vector3f> centerOfDrawnShapes = allShapesToDraw.keySet().iterator();
-//				SortingMachine<Vector3f> layerOrder = new SortingMachine1L<Vector3f>(new Comparator<Vector3f>() {
-//							@Override
-//							public int compare(Vector3f v1, Vector3f v2) {
-//								int retVal;
-//								if(showFarthestFirst){
-//									retVal = -1;
-//									if(v1.length() > v2.length())
-//										retVal = 1;
-//									else if(v1.length() == v2.length())
-//										retVal = 0;
-//								} else {
-//									retVal = 1;
-//									if(v1.length() > v2.length())
-//										retVal = -1;
-//									else if(v1.length() == v2.length())
-//										retVal = 0;
-//								}
-//								return retVal;
-//							}
-//				});
-//				
-//				while(centerOfDrawnShapes.hasNext()){
-//					layerOrder.add(centerOfDrawnShapes.next());	
-//				}
-//				layerOrder.changeToExtractionMode();
-//				Iterator<Vector3f> farthestFirst = layerOrder.iterator();
-//				
-//				while(farthestFirst.hasNext()){
-//					Vector3f center = farthestFirst.next();
-//					
-//				int x = 0;
-//				int y = 0;
-//				int samplingDistanceInPix = 5;
-				while(centerOfDrawnShapes.hasNext()){
-					Vector3f center = centerOfDrawnShapes.next();
-					if(allShapesToDraw.get(center) instanceof Ellipse2D.Double){
-//					if(allShapesToDraw.get(center) instanceof Rectangle2D.Double){
-						//map <x,y,z> to <r,g,b> ... A(X) = Y 
-						Vector3f colorTrnsFrmResult = new Vector3f();
-						/* A(x) = 255.0/(5.0)*center.x()+255.0/(2.0)  		-5 <= x,y <= 5
-						 * A(y) = 255.0/(5.0)*center.y()+255.0/(2.0)			22.5 <= z <= 27.5
-						 * A(z) = 255.0/(5.0)*center.z()-255.0*22.5/(5.0)		diameter = (5.0)
-						 */
-						colorTrnsFrmResult.setX((float)(255.0 - Math.abs(center.x() - colorPkg.shapeColorVBO[0]) * 255.0/colorPkg.shapeColorVBO[1]));
-						colorTrnsFrmResult.setY((float)(255.0 - Math.abs(center.y() - colorPkg.shapeColorVBO[2]) * 255.0/colorPkg.shapeColorVBO[3]));
-						colorTrnsFrmResult.setZ((float)(255.0 - Math.abs(center.z() - colorPkg.shapeColorVBO[4]) * 255.0/colorPkg.shapeColorVBO[5]));
-						if(colorTrnsFrmResult.x() >= 0 && colorTrnsFrmResult.y() >= 0 && colorTrnsFrmResult.z() >= 0 &&
-								colorTrnsFrmResult.x() < 256 && colorTrnsFrmResult.y() < 256 && colorTrnsFrmResult.z() < 256){
-								g2.setColor(new Color((int)colorTrnsFrmResult.x(),(int)colorTrnsFrmResult.y(),(int)colorTrnsFrmResult.z()));
+				
+				ImageObserver observer = new ImageObserver() {
+					@Override
+					public boolean imageUpdate(Image img, int infoflags, int x, int y, int width, int height) {
+						// TODO On Update do something ???
+						return false;
+					}
+				};
+				
+				// Draw Background
+				g2.drawImage( buffImgs[0], new AffineTransform(), this );
+				
+				// Rotate slowly and draw image
+				rotateImage( g2,
+						2.0f * Math.PI / 64.0f,
+						this.getWidth() / 2,
+						this.getHeight() / 2,
+						buffImgs[1],
+						observer); // Center rotation		
+				
+				// Add TEAM AWESOME TRANSFORMS !!!
+				teamAwesomeTransform1( 2, buffImgs[2], g2, observer, 10,
+						(float) (2.0f * Math.PI / 64.0f),
+						(float) (2.0f * Math.PI / 64.0f));
+				
+				// Transform Image by Pixels
+				
+	//			float numSphereSections = 2f;
+	//			for ( float theta = 0f ; theta < 2.0f * (float) Math.PI ; theta += 2.0f * (float) Math.PI / numSphereSections ) {
+	//				for ( float phi = 0f ; phi < 2.0f * (float) Math.PI ; phi += 2.0f * (float) Math.PI / numSphereSections ) {
+	//					addPixelatedImage( ( this.currentDirectoryIndexNum + 1 ) % this.numArrays,
+	//							imgNum2, g2, observer, 1,
+	//							(float) ( 8.0f * Math.sin(theta) * Math.cos(phi) ), (float) ( 8.0f * Math.sin(theta) * Math.sin(phi) ),
+	//							this.totalIterationCount / 64.0f, this.totalIterationCount / 64.0f);
+	//				}
+	//			}
+				
+				// Convex Rect Layers
+	//			addConvexLayers( ( this.currentDirectoryIndexNum + 1 ) % ( this.numScenesInCurrentLoad ), imgNum3, g2, observer );
+	
+				// Concave Rect Layers
+	//			addConcaveLayers( ( this.currentDirectoryIndexNum ) % ( this.numScenesInCurrentLoad ), imgNum2, g2, observer );
+				
+				AlphaComposite ac = java.awt.AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f );
+	
+				g2.setComposite(ac);
+				
+				if(controller == null)
+					controller = ViewGlass.controller;
+				else if(flashRedraw){
+					allShapesToDraw = controller.getVectorsToProjMapToDraw(panelID);		
+					Iterator<Vector3f> centerOfDrawnShapes = allShapesToDraw.keySet().iterator();
+	/***
+					SortingMachine<Vector3f> layerOrder = new SortingMachine1L<Vector3f>(new Comparator<Vector3f>() {
+								@Override
+								public int compare(Vector3f v1, Vector3f v2) {
+									int retVal;
+									if(showFarthestFirst){
+										retVal = -1;
+										if(v1.length() > v2.length())
+											retVal = 1;
+										else if(v1.length() == v2.length())
+											retVal = 0;
+									} else {
+										retVal = 1;
+										if(v1.length() > v2.length())
+											retVal = -1;
+										else if(v1.length() == v2.length())
+											retVal = 0;
+									}
+									return retVal;
+								}
+					});
+					
+					while(centerOfDrawnShapes.hasNext()){
+						layerOrder.add(centerOfDrawnShapes.next());	
+					}
+					layerOrder.changeToExtractionMode();
+					Iterator<Vector3f> farthestFirst = layerOrder.iterator();
+					
+					while(farthestFirst.hasNext()){
+						Vector3f center = farthestFirst.next();					
+	 ***/
+					
+					while(centerOfDrawnShapes.hasNext()){
+						Vector3f center = centerOfDrawnShapes.next();
+						if(allShapesToDraw.get(center) instanceof Ellipse2D.Double){
+							Vector3f colorTrnsFrmResult = new Vector3f();
+							/* A(x) = 255.0/(5.0)*center.x()+255.0/(2.0)  		-5 <= x,y <= 5
+							 * A(y) = 255.0/(5.0)*center.y()+255.0/(2.0)			22.5 <= z <= 27.5
+							 * A(z) = 255.0/(5.0)*center.z()-255.0*22.5/(5.0)		diameter = (5.0)
+							 */
+							colorTrnsFrmResult.setX((float)(255.0 - Math.abs(center.x() - colorPkg.shapeColorVBO[0]) * 255.0/colorPkg.shapeColorVBO[1]));
+							colorTrnsFrmResult.setY((float)(255.0 - Math.abs(center.y() - colorPkg.shapeColorVBO[2]) * 255.0/colorPkg.shapeColorVBO[3]));
+							colorTrnsFrmResult.setZ((float)(255.0 - Math.abs(center.z() - colorPkg.shapeColorVBO[4]) * 255.0/colorPkg.shapeColorVBO[5]));
+							if(colorTrnsFrmResult.x() >= 0 && colorTrnsFrmResult.y() >= 0 && colorTrnsFrmResult.z() >= 0 &&
+									colorTrnsFrmResult.x() < 256 && colorTrnsFrmResult.y() < 256 && colorTrnsFrmResult.z() < 256){
+									g2.setColor(new Color((int)colorTrnsFrmResult.x(),(int)colorTrnsFrmResult.y(),(int)colorTrnsFrmResult.z()));
+							}
+							else if(center.z() < 0) // virtual image
+								g2.setColor(Color.BLACK);
+							else //just far into picture
+								g2.setColor(Color.WHITE);
+							g2.setTransform(AffineTransform.getRotateInstance(totalIterationCount, this.getWidth() / 2.0f , this.getHeight() / 2.0f ) );
+							g2.setTransform(AffineTransform.getTranslateInstance(
+									this.getWidth() / 2.0f + (this.getWidth() / (totalIterationCount % 7.0f) ) * Math.cos(totalIterationCount),
+									this.getHeight() / 2.0f + (this.getHeight() / (totalIterationCount % 7.0f) ) * Math.sin(totalIterationCount) ) );
+	
 						}
-						else if(center.z() < 0) // virtual image
-							g2.setColor(Color.BLACK);
-						else //just far into picture
-							g2.setColor(Color.WHITE);
-						g2.setTransform(AffineTransform.getRotateInstance(totalIterationCount, this.getWidth() / 2.0f , this.getHeight() / 2.0f ) );
-						g2.setTransform(AffineTransform.getTranslateInstance(
-								this.getWidth() / 2.0f + (this.getWidth() / (totalIterationCount % 7.0f) ) * Math.cos(totalIterationCount),
-								this.getHeight() / 2.0f + (this.getHeight() / (totalIterationCount % 7.0f) ) * Math.sin(totalIterationCount) ) );
-						
-//						int pixel = buffImg.getRGB( x, y );
-//						
-//						int red = (pixel >> 16) & 0xff;
-//					    int green = (pixel >> 8) & 0xff;
-//					    int blue = (pixel) & 0xff;
-//					    int alpha = (pixel >> 24) & 0xff;
-//					    
-//					    g2.setColor( new Color( red, green, blue, alpha ) );
-//					    g2.fill( new Ellipse2D.Float(
-//					    		(float) allShapesToDraw.get(center).getBounds2D().getX(),
-//								(float) allShapesToDraw.get(center).getBounds2D().getY(),
-//					    		5, 5 ) );
-//					    
-//					    x += samplingDistanceInPix;
-//					    
-//					    if ( x >= buffImg.getWidth() ) {
-//					    	x = 0;
-//					    	y += samplingDistanceInPix;
-//					    }
-//					    
-//					    if ( y >= buffImg.getHeight() ) {
-//					    	x = 0;
-//					    	y = 0;
-//					    }
-						
-//						g2.fill(allShapesToDraw.get(center));
-//						g2.drawImage(buffImg,
-////								(int) (center.x() - allShapesToDraw.get(center).getBounds2D().getX()/2 ),
-////								(int) (center.y() - allShapesToDraw.get(center).getBounds2D().getY()/2 + 150 ),
-////								(int) (center.x() + allShapesToDraw.get(center).getBounds2D().getX()/2 ),
-////								(int) (center.y() + allShapesToDraw.get(center).getBounds2D().getY()/2 + 150),
-//								(int) (center.x()),
-//								(int) (center.y()),
-//								(int) (center.x() + allShapesToDraw.get(center).getBounds2D().getX()),
-//								(int) (center.y() + allShapesToDraw.get(center).getBounds2D().getY()),
-//								0, //sx1
-//								0, //sy1
-//								buffImg.getWidth(observer), //sx2
-//								buffImg.getHeight(observer), //sy2
-//								g2.getColor(),
-//								observer);
+						else{
+							g2.setColor(Color.RED);
+							g2.fill(allShapesToDraw.get(center));
+						}
 					}
-					else{
-						g2.setColor(Color.RED);
-						g2.fill(allShapesToDraw.get(center));
+					
+					flashRedraw = false;
+					
+					// reset COUNT OF TOTAL FLASH DRAWINGS ( this.totalIterationCount ) - when count == 1 Million
+					if ( this.totalIterationCount > 1000000) {
+						this.totalIterationCount = totalIterationCount % 1000000;
 					}
-				}
-				
-				//TODO ....get shape projections to draw
-
-				//
-				flashRedraw = false;
-				
-				// reset variables
-				if ( this.totalIterationCount > 1000) {
-					this.totalIterationCount = totalIterationCount % 1000;
+					
 				}
 			}
+		}
+
+		private BufferedImage getCurrentImgAfterIteration(int directoryIndex) {
+			
+			int imgNum = this.totalIterationCount % this.numScenesInCurrentLoad;
+			BufferedImage buffImg = this.buffImgArray[directoryIndex][imgNum];
+			
+			if( imgNum >= (this.numScenesInCurrentLoad - 1) ) {
+				
+				imgNum = 0; // Loop Hack
+				
+				this.currentFrameForClipN[directoryIndex] = imgNum;
+				
+//				fillBuffImg2DArray( directoryIndex,
+//						this.frameDirectory[directoryIndex][0], this.frameDirectory[directoryIndex][1]);
+				
+			}
+			
+			if( buffImg == null) {
+				imgNum = 0;
+			}
+			
+			buffImg = this.buffImgArray[directoryIndex][imgNum];
+			
+			totalIterationCount++;
+			
+			return buffImg;
+			
 		}
 
 		private void rotateImage( Graphics2D g2, double theta, int rotationPointX, int rotationPointY, BufferedImage buffImg, ImageObserver observer) {
@@ -550,49 +386,50 @@ public class GlassPanel extends JPanel {
 			
 		}
 
-		private void addConvexLayers( int graphicsSceneNum, int imgNum , Graphics2D g2, ImageObserver observer ) {
+		private void addConvexLayers( int directoryIndex, int imgNum , Graphics2D g2, ImageObserver observer ) {
 			
-			BufferedImage graphicsBuffImg = this.buffImgArray[graphicsSceneNum][imgNum];
+			BufferedImage graphicsBuffImg = this.buffImgArray[directoryIndex][imgNum];
+			float currentFrame = this.currentFrameForClipN[directoryIndex];
 			while( graphicsBuffImg == null) {
 				imgNum = imgNum % this.buffImgArray[0].length;
-				graphicsSceneNum = ( graphicsSceneNum + 2 ) % ( this.numArrays );
-				graphicsBuffImg = this.buffImgArray[graphicsSceneNum][imgNum];
+				directoryIndex = ( directoryIndex ) % ( this.numScenesInCurrentLoad );
+				graphicsBuffImg = this.buffImgArray[directoryIndex][imgNum];
 			}
 			
-			for ( float phi = 0 ; phi <= 2.0 * Math.PI ; phi += 2.0 * Math.PI/ 8.0f ) {
-				int numCircleSections = (int) (this.currentFrame % 8) ;
-				int numPoints = (int) Math.abs( 4 * numCircleSections * Math.sin(phi) );
-				
-				float radiusMultiplier = 2.5f;
-				float xWidth = this.currentFrame % 3.5f ;
-				float yHeight = this.currentFrame % 3.5f ;
-				
-				drawCircularPatternWithBufferedImageFromSceneNum(
-						graphicsSceneNum,
-						g2,
-						graphicsBuffImg,
-						observer,
-						numCircleSections,
-						numPoints,
-						radiusMultiplier,
-						this.getWidth() / 0.75f,
-						this.getHeight() / 0.75f);
-				
-			}
+//			for ( float phi = 0 ; phi <= 2.0 * Math.PI ; phi += 2.0 * Math.PI/ 8.0f ) {
+//				int numCircleSections = (int) ( directoryIndex % 8) ;
+//				int numPoints = (int) Math.abs( 4 * numCircleSections * Math.sin(phi) );
+//				
+//				float radiusMultiplier = 2.5f;
+//				float xWidth = this.currentFrame % 3.5f ;
+//				float yHeight = this.currentFrame % 3.5f ;
+//				
+//				drawCircularPatternWithBufferedImageFromSceneNum(
+//						directoryIndex,
+//						g2,
+//						graphicsBuffImg,
+//						observer,
+//						numCircleSections,
+//						numPoints,
+//						radiusMultiplier,
+//						this.getWidth() / 0.75f,
+//						this.getHeight() / 0.75f);
+//				
+//			}
 			
 			
 		}
 
-		private void addConcaveLayers(int currentDirectoryIndexNum, int imgNum2, Graphics2D g2, ImageObserver observer) {
+		private void addConcaveLayers(int directoryIndex, int imgNum, Graphics2D g2, ImageObserver observer) {
 			
-			BufferedImage graphicsBuffImg = this.buffImgArray[currentDirectoryIndexNum][imgNum2];
+			BufferedImage graphicsBuffImg = this.buffImgArray[directoryIndex][imgNum];
 			while( graphicsBuffImg == null) {
-				imgNum2 = imgNum2 % this.buffImgArray[0].length;
-				graphicsBuffImg = this.buffImgArray[ ( currentDirectoryIndexNum + 1 ) % this.numArrays ][imgNum2 % this.numBuffImgsAllowedPerArray];
+				imgNum = imgNum % this.buffImgArray[0].length;
+				graphicsBuffImg = this.buffImgArray[ ( directoryIndex + 1 ) % this.numScenesInCurrentLoad ][imgNum % this.numBuffImgsStoredInEachArrayOfImages];
 			}
 			
 			for ( float phi = 0 ; phi <= 2.0 * Math.PI ; phi += 2.0 * Math.PI/ 12.0f ) {
-				int numCircleSections = (int) (this.currentFrame % 12);
+				int numCircleSections = (int) ( imgNum % 12 );
 				int numPoints = (int) Math.abs(( numCircleSections * Math.cos(phi) ));
 				float radiusMultiplier = 1.5f;
 //				float xWidth = this.totalIterationCount % 1.5f / 1.5f;
@@ -610,7 +447,7 @@ public class GlassPanel extends JPanel {
 //						this.getHeight() / 16.0f);
 				
 				drawCircularPatternWithBufferedImageFromSceneNum(
-						currentDirectoryIndexNum,
+						directoryIndex,
 						g2,
 						graphicsBuffImg,
 						observer,
@@ -625,16 +462,17 @@ public class GlassPanel extends JPanel {
 		}
 
 		private void addTransformOfImageByImageSection(
-				int currentDirectoryIndexNum2, int imgNum, Graphics2D g2,
+				int directoryIndex, int imgNum, Graphics2D g2,
 				ImageObserver observer,
 				int samplingInterval, int numThetaSectionsMod, int numPhiSectionsMod ,
 				float xMultiplier, float yMultiplier ) {
 			
-			int graphicsSceneNum = ( this.currentDirectoryIndexNum + 1 ) % ( this.numArrays );
+			int graphicsSceneNum = ( directoryIndex ) % ( this.numScenesInCurrentLoad );
+			float currentFrame = this.currentFrameForClipN[directoryIndex];
 			BufferedImage graphicsBuffImg = this.buffImgArray[graphicsSceneNum][imgNum];
 			while( graphicsBuffImg == null) {
 				imgNum = imgNum % this.buffImgArray[0].length;
-				graphicsSceneNum = ( graphicsSceneNum + 2 ) % ( this.numArrays );
+				graphicsSceneNum = ( graphicsSceneNum ) % ( this.numScenesInCurrentLoad );
 				graphicsBuffImg = this.buffImgArray[graphicsSceneNum][imgNum];
 			}
 			
@@ -646,7 +484,7 @@ public class GlassPanel extends JPanel {
 				
 				for ( int y = 0 ; y < graphicsBuffImg.getHeight() ; y += samplingInterval) {
 					
-					int numCircleSections = (int) (this.currentFrame % 8) ;
+					int numCircleSections = (int) ( currentFrame % 8 ) ;
 					int numPoints = (int) Math.abs( 4 * numCircleSections * Math.sin(phi) );
 					
 	//				float radiusMultiplier = 2.5f;
@@ -672,16 +510,55 @@ public class GlassPanel extends JPanel {
 			
 		}
 		
-		private void addPixelatedImage(int currentDirectoryIndexNum2, int imgNum, Graphics2D g2,
+		private void teamAwesomeTransform1(int directoryIndex,
+				BufferedImage buffImg,
+				Graphics2D g2,
+				ImageObserver observer, int samplingInterval,
+				float theta, float phi) {
+			
+			int imageWidth = this.getWidth();
+			int imageHeight = this.getHeight();
+			
+			
+			for ( int x = 0 ; x < buffImg.getWidth() ; x += samplingInterval) {
+				
+				for ( int y = 0 ; y < buffImg.getHeight() ; y += samplingInterval) {
+					
+					float radius = (float) Math.sqrt( Math.pow( x - imageWidth / 2.0f, 2 ) +
+							Math.pow( y - imageHeight / 2.0f, 2 ) );
+					
+					int pixel = buffImg.getRGB(x, y);
+					
+				    int red = (pixel >> 16) & 0xff;
+				    int green = (pixel >> 8) & 0xff;
+				    int blue = (pixel) & 0xff;
+				    int alpha = (pixel >> 24) & 0xff;
+				    
+				    g2.setColor( new Color( red, green, blue, alpha ) );
+				    g2.fill( new Ellipse2D.Float(
+				    		(float) ( this.getWidth() / 2.0f + 
+				    				radius * Math.sin(theta) * Math.cos(phi) ),
+				    		(float) ( this.getHeight() / 2.0f +
+				    				radius * Math.sin(theta) * Math.sin(phi)),
+				    		samplingInterval, samplingInterval ) );
+						
+				}
+				
+			}
+			
+		}
+		
+		private void addPixelatedImage(int directoryIndex, int imgNum, Graphics2D g2,
 				ImageObserver observer, int samplingInterval,
 				float xDiv, float yDiv,
 				float theta, float phi) {
 			
-			int graphicsSceneNum = ( this.currentDirectoryIndexNum + 1 ) % ( this.numArrays );
+			int graphicsSceneNum = ( directoryIndex ) % ( this.numScenesInCurrentLoad );
+			float currentFrame = this.currentFrameForClipN[directoryIndex];
 			BufferedImage graphicsBuffImg = this.buffImgArray[graphicsSceneNum][imgNum];
 			while( graphicsBuffImg == null) {
 				imgNum = imgNum % this.buffImgArray[0].length;
-				graphicsSceneNum = ( graphicsSceneNum + 2 ) % ( this.numArrays );
+				graphicsSceneNum = ( graphicsSceneNum + 2 ) % ( this.numScenesInCurrentLoad );
 				graphicsBuffImg = this.buffImgArray[graphicsSceneNum][imgNum];
 			}
 			
