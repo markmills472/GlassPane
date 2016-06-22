@@ -39,17 +39,17 @@ public class GlassPanel extends JPanel {
 		boolean showFarthestFirst = false;
 		GlassPanelColorPackage colorPkg = null;
 		private String[][] frameDirectory;
-		Map<Integer,BufferedImage[]> buffImgArray = null;
+		Map<Integer,Map<Integer,BufferedImage[]>> buffImgArray = null; // Map :: bufferArrayNum -> sceneNum -> arryOfImages -> image
 		
 		// Set Movie import configurations
-		int numBuffImgsStoredInEachArrayOfImages = 100; // 2479;
-		int numScenesInCurrentLoad = 1;
-		
-		int frameReadCounterIncrement = 5;
+		int numBufferArrays = 3;
+		int numScenes = 1;
+		int currentBuffArryIndex = 0;
+		int numBuffImgsStoredInEachArray = 100; // 2479;
 		
 		//For drawing images and morphing them
 		int totalIterationCount = 0;
-		float [] framesPerIterationClipN = { 20f, 20f, 20f }; // Rate to import images ( counter for reading images -- 1 == every picture -- 2 == every other -- etc... )
+		float [] framesPerIterationClipN = { 1f, 1f, 1f }; // Rate to import images ( counter for reading images -- 1 == every picture -- 2 == every other -- etc... )
 		float [] currentFrameForClipN = { 1f, 1f, 1f }; // Changes image file read during any given frame
 		
 		
@@ -59,14 +59,18 @@ public class GlassPanel extends JPanel {
 			
 			this.panelID = panelNum;
 			this.controller = controller;
-			this.frameDirectory = new String[this.numScenesInCurrentLoad][2];
-			this.buffImgArray = new HashMap<Integer,BufferedImage[]> ();
+			this.frameDirectory = new String[this.numScenes][2];
+			this.buffImgArray = new HashMap<Integer,Map<Integer,BufferedImage[]>> ();
+			Map<Integer,BufferedImage[]> imgArray = new HashMap<Integer,BufferedImage[]>();
 			
-			for( int i = 0 ; i < this.numScenesInCurrentLoad; i++ ) {
-				this.buffImgArray.put(i,
-						new BufferedImage[this.numBuffImgsStoredInEachArrayOfImages]);
+			for ( int bufferNum = 0 ; bufferNum < this.numBufferArrays ; bufferNum++ ) {
+				for( int sceneNum = 0 ; sceneNum < this.numScenes; sceneNum++ ) {
+					imgArray.put(sceneNum, new BufferedImage[this.numBuffImgsStoredInEachArray] );
+					this.buffImgArray.put( bufferNum , imgArray);
+					imgArray = new HashMap<Integer,BufferedImage[]>();
+				}
 			}
-
+			
 			populateVideoDirectories();
 			// Load all background images into memory first
 			uploadAllImagesTo2DArrayOfSceneFrames();
@@ -86,12 +90,16 @@ public class GlassPanel extends JPanel {
 			
 			this.panelID = panelNum;
 			this.controller = controller;
-			this.frameDirectory = new String[this.numScenesInCurrentLoad][2];
-			this.buffImgArray = new HashMap<Integer,BufferedImage[]> ();
+			this.frameDirectory = new String[this.numScenes][2];
+			this.buffImgArray = new HashMap<Integer,Map<Integer,BufferedImage[]>> ();
+			Map<Integer,BufferedImage[]> imgArray = new HashMap<Integer,BufferedImage[]>();
 			
-			for( int i = 0 ; i < this.numScenesInCurrentLoad; i++ ) {
-				this.buffImgArray.put(i,
-						new BufferedImage[this.numBuffImgsStoredInEachArrayOfImages]);
+			for ( int bufferNum = 0 ; bufferNum < this.numBufferArrays ; bufferNum++ ) {
+				for( int sceneNum = 0 ; sceneNum < this.numScenes; sceneNum++ ) {
+					imgArray.put(sceneNum, new BufferedImage[this.numBuffImgsStoredInEachArray] );
+					this.buffImgArray.put( bufferNum , imgArray);
+					imgArray = new HashMap<Integer,BufferedImage[]>();
+				}
 			}
 			
 			populateVideoDirectories();
@@ -126,9 +134,11 @@ public class GlassPanel extends JPanel {
 		
 		private void uploadAllImagesTo2DArrayOfSceneFrames() {
 			
-			if( this.buffImgArray.size() != 0 || this.buffImgArray.get(0).length != 0 ) {
+			if( this.buffImgArray.size() != 0 &&
+					this.buffImgArray.get(0).size() != 0 &&
+					this.buffImgArray.get(0).get(0).length != 0 ) {
 				
-				for ( int j = 0 ; j < this.numScenesInCurrentLoad ; j++ ) {
+				for ( int j = 0 ; j < this.numScenes ; j++ ) {
 					fillBuffImg2DArray( j, this.frameDirectory[j][0], this.frameDirectory[j][1]);
 				}	
 				
@@ -145,14 +155,14 @@ public class GlassPanel extends JPanel {
 					
 					float currentFrameForClip = this.currentFrameForClipN[n];
 					
-					for ( int i = 1  ; i <= this.numBuffImgsStoredInEachArrayOfImages ; i++ ) {
+					for ( int i = 1  ; i <= this.numBuffImgsStoredInEachArray ; i++ ) {
 							
 						Image rawImg;
 						
 						
 							try {
 								
-								String fileNumString = Integer.toString((int) ( currentFrameForClip % this.numBuffImgsStoredInEachArrayOfImages ) );
+								String fileNumString = Integer.toString((int) ( currentFrameForClip % this.numBuffImgsStoredInEachArray ) );
 								
 								while ( fileNumString.length() != 4 ) fileNumString = "0" + fileNumString;
 									rawImg = ImageIO.read(new File(firstHalfFileLocIntro + fileNumString + secondHalfTimeDelayFileType ));
@@ -164,14 +174,14 @@ public class GlassPanel extends JPanel {
 								buffImg.getGraphics().drawImage(rawImg, 0, 0, null);
 									
 								// Create a buffered image with transparency
-								this.buffImgArray.get(directoryIndex)[i-1] = buffImg;
+								this.buffImgArray.get(this.currentBuffArryIndex).get(directoryIndex)[i-1] = buffImg;
 				
 							} catch (IOException e) {
 								
 								System.out.println(e.getMessage());
 								
 								// Fill all missed slots with nulls to save space
-								this.buffImgArray.get(directoryIndex)[i] = null;
+								this.buffImgArray.get(currentBuffArryIndex).get(directoryIndex)[i] = null;
 								
 								if( e.getMessage().equalsIgnoreCase( "Can't read input file!" ) ) {
 									System.out.println( "Img Loc : " + i + " -- Might not be an error" );
@@ -205,12 +215,12 @@ public class GlassPanel extends JPanel {
 				boolean flashRedraw = ViewGlass.flashRedraw;
 				AffineTransform originalTransform = g2.getTransform();
 				
-				float [] imgNums = new float [ this.numScenesInCurrentLoad ];
+				float [] imgNums = new float [ this.numScenes ];
 				for ( int i = 0 ; i < imgNums.length ; i++ ) {
-					imgNums[i] = this.currentFrameForClipN[i] % this.buffImgArray.get(i).length;
+					imgNums[i] = this.currentFrameForClipN[i] % this.buffImgArray.get(this.currentBuffArryIndex).get(i).length;
 				}
 				
-				BufferedImage [] buffImgs = new BufferedImage [ this.numScenesInCurrentLoad ];
+				BufferedImage [] buffImgs = new BufferedImage [ this.numScenes ];
 				for ( int i = 0 ; i < buffImgs.length ; i++ ) {
 					buffImgs[i] = getCurrentImgAfterIteration(i);
 				}
@@ -359,7 +369,7 @@ public class GlassPanel extends JPanel {
 		private BufferedImage getCurrentImgAfterIteration(int directoryIndex) {
 			
 			float currentFrame = this.currentFrameForClipN[directoryIndex];
-			if( currentFrame >= (this.numBuffImgsStoredInEachArrayOfImages - 1) ) {
+			if( currentFrame >= (this.numBuffImgsStoredInEachArray - 1) ) {
 				
 				this.currentFrameForClipN[directoryIndex] = currentFrame;
 				
@@ -370,12 +380,12 @@ public class GlassPanel extends JPanel {
 				
 			}
 			
-			BufferedImage buffImg = this.buffImgArray.get(directoryIndex)[(int) currentFrame];
+			BufferedImage buffImg = this.buffImgArray.get(this.currentBuffArryIndex).get(directoryIndex)[(int) currentFrame];
 			if( buffImg == null) {
 				currentFrame = 0;
 			}
 			
-			buffImg = this.buffImgArray.get(directoryIndex)[(int) currentFrame];
+			buffImg = this.buffImgArray.get(this.currentBuffArryIndex).get(directoryIndex)[(int) currentFrame];
 			this.currentFrameForClipN[directoryIndex] += this.framesPerIterationClipN[directoryIndex];
 			
 			
@@ -396,12 +406,12 @@ public class GlassPanel extends JPanel {
 
 		private void addConvexLayers( int directoryIndex, int imgNum , Graphics2D g2, ImageObserver observer ) {
 			
-			BufferedImage graphicsBuffImg = this.buffImgArray.get(directoryIndex)[imgNum];
+			BufferedImage graphicsBuffImg = this.buffImgArray.get(this.currentBuffArryIndex).get(directoryIndex)[imgNum];
 			float currentFrame = this.currentFrameForClipN[directoryIndex];
 			while( graphicsBuffImg == null) {
-				imgNum = imgNum % this.buffImgArray.get(0).length;
-				directoryIndex = ( directoryIndex ) % ( this.numScenesInCurrentLoad );
-				graphicsBuffImg = this.buffImgArray.get(directoryIndex)[imgNum];
+				imgNum = imgNum % this.buffImgArray.get(this.currentBuffArryIndex).get(0).length;
+				directoryIndex = ( directoryIndex ) % ( this.numScenes );
+				graphicsBuffImg = this.buffImgArray.get(this.currentBuffArryIndex).get(directoryIndex)[imgNum];
 			}
 			
 //			for ( float phi = 0 ; phi <= 2.0 * Math.PI ; phi += 2.0 * Math.PI/ 8.0f ) {
@@ -430,11 +440,11 @@ public class GlassPanel extends JPanel {
 
 		private void addConcaveLayers(int directoryIndex, int imgNum, Graphics2D g2, ImageObserver observer) {
 			
-			BufferedImage graphicsBuffImg = this.buffImgArray.get(directoryIndex)[imgNum];
+			BufferedImage graphicsBuffImg = this.buffImgArray.get(this.currentBuffArryIndex).get(directoryIndex)[imgNum];
 			while( graphicsBuffImg == null) {
-				imgNum = imgNum % this.buffImgArray.get(imgNum).length;
-				graphicsBuffImg = this.buffImgArray.get( directoryIndex )
-								[imgNum % this.numBuffImgsStoredInEachArrayOfImages];
+				imgNum = imgNum % this.buffImgArray.get(this.currentBuffArryIndex).get(imgNum).length;
+				graphicsBuffImg = this.buffImgArray.get(this.currentBuffArryIndex).get( directoryIndex )
+								[imgNum % this.numBuffImgsStoredInEachArray];
 			}
 			
 			for ( float phi = 0 ; phi <= 2.0 * Math.PI ; phi += 2.0 * Math.PI/ 12.0f ) {
@@ -477,11 +487,11 @@ public class GlassPanel extends JPanel {
 				float xMultiplier, float yMultiplier ) {
 			
 			float currentFrame = this.currentFrameForClipN[directoryIndex];
-			BufferedImage graphicsBuffImg = this.buffImgArray.get(directoryIndex)[imgNum];
+			BufferedImage graphicsBuffImg = this.buffImgArray.get(this.currentBuffArryIndex).get(directoryIndex)[imgNum];
 			while( graphicsBuffImg == null) {
-				imgNum = imgNum % this.buffImgArray.get(directoryIndex).length;
-				directoryIndex = ( directoryIndex ) % ( this.numScenesInCurrentLoad );
-				graphicsBuffImg = this.buffImgArray.get(directoryIndex)[imgNum];
+				imgNum = imgNum % this.buffImgArray.get(this.currentBuffArryIndex).get(directoryIndex).length;
+				directoryIndex = ( directoryIndex ) % ( this.numScenes );
+				graphicsBuffImg = this.buffImgArray.get(this.currentBuffArryIndex).get(directoryIndex)[imgNum];
 			}
 			
 			float theta = 0;
@@ -562,12 +572,12 @@ public class GlassPanel extends JPanel {
 				float xDiv, float yDiv,
 				float theta, float phi) {
 			
-			int graphicsSceneNum = ( directoryIndex ) % ( this.numScenesInCurrentLoad );
+			int graphicsSceneNum = ( directoryIndex ) % ( this.numScenes );
 			float currentFrame = this.currentFrameForClipN[directoryIndex];
-			BufferedImage graphicsBuffImg = this.buffImgArray.get(graphicsSceneNum)[imgNum];
+			BufferedImage graphicsBuffImg = this.buffImgArray.get(this.currentBuffArryIndex).get(graphicsSceneNum)[imgNum];
 			while( graphicsBuffImg == null) {
-				imgNum = imgNum % this.buffImgArray.get(0).length;
-				graphicsBuffImg = this.buffImgArray.get(graphicsSceneNum)[imgNum];
+				imgNum = imgNum % this.buffImgArray.get(this.currentBuffArryIndex).get(0).length;
+				graphicsBuffImg = this.buffImgArray.get(this.currentBuffArryIndex).get(graphicsSceneNum)[imgNum];
 			}
 			
 			for ( int x = 0 ; x < graphicsBuffImg.getWidth() ; x += samplingInterval) {
